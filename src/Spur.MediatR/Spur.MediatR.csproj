@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <PackageId>Spur.MediatR</PackageId>
+    <Title>Spur.MediatR - CQRS Integration</Title>
+    <Description>MediatR integration for Spur. Base handler class and pipeline behavior for CQRS patterns. Automatic exception wrapping and Result-based handlers.</Description>
+    <PackageTags>Spur;mediatr;cqrs;handler;pipeline</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AdelSS04/Spur</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdelSS04/Spur</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RootNamespace>Spur.MediatR</RootNamespace>
+    <AssemblyName>Spur.MediatR</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spur\Spur.csproj" />
+  </ItemGroup>
+</Project>

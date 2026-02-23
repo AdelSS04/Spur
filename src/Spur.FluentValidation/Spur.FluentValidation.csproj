@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <PackageId>Spur.FluentValidation</PackageId>
+    <Title>Spur.FluentValidation - Validation Integration</Title>
+    <Description>FluentValidation integration for Spur. Seamlessly integrate FluentValidation validators into Result pipelines. Automatic conversion of validation failures to Result errors.</Description>
+    <PackageTags>Spur;fluentvalidation;validation;fluent</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AdelSS04/Spur</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdelSS04/Spur</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RootNamespace>Spur.FluentValidation</RootNamespace>
+    <AssemblyName>Spur.FluentValidation</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spur\Spur.csproj" />
+  </ItemGroup>
+</Project>

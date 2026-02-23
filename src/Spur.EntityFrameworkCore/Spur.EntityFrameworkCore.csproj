@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <PackageId>Spur.EntityFrameworkCore</PackageId>
+    <Title>Spur.EntityFrameworkCore - EF Core Integration</Title>
+    <Description>Entity Framework Core integration for Spur. Query extensions that return Result types instead of throwing. FirstOrResultAsync, SingleOrResultAsync, SaveChangesResultAsync with automatic exception handling.</Description>
+    <PackageTags>Spur;entityframeworkcore;efcore;orm;database;linq;query</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AdelSS04/Spur</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdelSS04/Spur</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RootNamespace>Spur.EntityFrameworkCore</RootNamespace>
+    <AssemblyName>Spur.EntityFrameworkCore</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spur\Spur.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

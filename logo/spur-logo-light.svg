@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 100" width="340" height="100">
+
+  <rect width="340" height="100" fill="#ffffff"/>
+
+  <!-- ═══════════════════════════ -->
+  <!--  Mark — Spur spur       -->
+  <!-- ═══════════════════════════ -->
+
+  <!-- Input -->
+  <line x1="18" y1="50" x2="40" y2="50"
+        stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Fork node -->
+  <circle cx="40" cy="50" r="2.8" fill="#0f172a"/>
+
+  <!-- Upper arm — main track (continues straight, brighter) -->
+  <line x1="40" y1="50" x2="70" y2="33"
+        stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" opacity="0.16"/>
+
+  <!-- Lower arm — spur branch (drops away, faint) -->
+  <line x1="40" y1="50" x2="70" y2="67"
+        stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" opacity="0.08"/>
+
+  <!-- Spur terminus (the branch that diverges — this is the "Spur") -->
+  <line x1="70" y1="67" x2="90" y2="67"
+        stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Main track terminus dot (faint — it goes on) -->
+  <circle cx="70" cy="33" r="2" fill="#0f172a" opacity="0.13"/>
+
+  <!-- Spur terminus dot -->
+  <circle cx="90" cy="67" r="3" fill="#10b981"/>
+
+  <!-- ═══════════════════════════ -->
+  <!--  Wordmark                  -->
+  <!-- ═══════════════════════════ -->
+
+  <text x="112" y="62"
+        font-family="'Georgia', 'Times New Roman', serif"
+        font-size="52" font-weight="400"
+        fill="#0f172a"
+        letter-spacing="-1.5">Spur</text>
+
+  <!-- Hairline -->
+  <line x1="112" y1="74" x2="320" y2="74"
+        stroke="#e2e8f0" stroke-width="0.75"/>
+
+  <!-- Tagline -->
+  <text x="113" y="89"
+        font-family="'Helvetica Neue', Arial, sans-serif"
+        font-size="9" fill="#94a3b8"
+        letter-spacing="4">Spur-ORIENTED PROGRAMMING</text>
+
+</svg>

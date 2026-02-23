@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <PackageId>Spur</PackageId>
+    <Title>Spur - Spur-Oriented Programming for .NET</Title>
+    <Description>Spur-Oriented Programming for .NET. HTTP-first, fluent, AOT-ready error handling with zero external dependencies. Features: zero-allocation success path, type-safe error handling, 10-100x faster than exceptions, built-in HTTP semantics, Native AOT compatible.</Description>
+    <PackageTags>result;error-handling;Spur;Spur-oriented-programming;functional;either;option;monad;fluent;pipeline;http;aspnetcore;aot;native-aot</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AdelSS04/Spur</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdelSS04/Spur</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReleaseNotes>See CHANGELOG.md for details</PackageReleaseNotes>
+    <RootNamespace>Spur</RootNamespace>
+    <AssemblyName>Spur</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

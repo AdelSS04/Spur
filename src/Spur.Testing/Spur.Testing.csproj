@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net9.0;net8.0</TargetFrameworks>
+    <PackageId>Spur.Testing</PackageId>
+    <Title>Spur.Testing - Test Assertions</Title>
+    <Description>Test assertion helpers for Spur. Fluent assertion API for testing Result types. Framework-agnostic, works with xUnit, NUnit, MSTest. Zero external dependencies.</Description>
+    <PackageTags>Spur;testing;assertions;xunit;nunit;mstest</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/AdelSS04/Spur</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AdelSS04/Spur</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RootNamespace>Spur.Testing</RootNamespace>
+    <AssemblyName>Spur.Testing</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Spur\Spur.csproj" />
+  </ItemGroup>
+</Project>

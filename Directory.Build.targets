@@ -1,0 +1,16 @@
+<Project>
+  <!-- Applies to all test projects automatically -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Tests'))">
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>false</IsAotCompatible>
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Applies to benchmark projects -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Benchmarks'))">
+    <IsPackable>false</IsPackable>
+    <IsAotCompatible>false</IsAotCompatible>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+</Project>

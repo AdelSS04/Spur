@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Spur.Benchmarks/Spur.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Spur.SampleApi/Spur.SampleApi.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Spur.Analyzers/Spur.Analyzers.csproj" />
+    <Project Path="src/Spur.AspNetCore/Spur.AspNetCore.csproj" />
+    <Project Path="src/Spur.EntityFrameworkCore/Spur.EntityFrameworkCore.csproj" />
+    <Project Path="src/Spur.FluentValidation/Spur.FluentValidation.csproj" />
+    <Project Path="src/Spur.Generators/Spur.Generators.csproj" />
+    <Project Path="src/Spur.MediatR/Spur.MediatR.csproj" />
+    <Project Path="src/Spur.Testing/Spur.Testing.csproj" />
+    <Project Path="src/Spur/Spur.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Spur.Analyzers.Tests/Spur.Analyzers.Tests.csproj" />
+    <Project Path="tests/Spur.AspNetCore.Tests/Spur.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Spur.EntityFrameworkCore.Tests/Spur.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Spur.FluentValidation.Tests/Spur.FluentValidation.Tests.csproj" />
+    <Project Path="tests/Spur.MediatR.Tests/Spur.MediatR.Tests.csproj" />
+    <Project Path="tests/Spur.Testing.Tests/Spur.Testing.Tests.csproj" />
+    <Project Path="tests/Spur.Tests/Spur.Tests.csproj" />
+  </Folder>
+</Solution>

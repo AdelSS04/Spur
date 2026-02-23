@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 100" width="460" height="100">
+
+  <rect width="460" height="100" fill="#ffffff"/>
+
+  <!-- Input line -->
+  <line x1="20" y1="50" x2="46" y2="50" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Fork node -->
+  <circle cx="46" cy="50" r="3" fill="#0f172a"/>
+
+  <!-- Upper arm -->
+  <line x1="46" y1="50" x2="80" y2="30" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" opacity="0.18"/>
+
+  <!-- Lower arm -->
+  <line x1="46" y1="50" x2="80" y2="70" stroke="#0f172a" stroke-width="1.5" stroke-linecap="round" opacity="0.08"/>
+
+  <!-- Success track -->
+  <line x1="80" y1="30" x2="108" y2="30" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Failure terminus -->
+  <circle cx="80" cy="70" r="2" fill="#0f172a" opacity="0.12"/>
+
+  <!-- Success terminus -->
+  <circle cx="108" cy="30" r="3.5" fill="#10b981"/>
+
+  <!-- Wordmark -->
+  <text x="132" y="63"
+        font-family="'Georgia', 'Times New Roman', serif"
+        font-size="48" font-weight="400"
+        fill="#0f172a"
+        letter-spacing="-2">Spur</text>
+
+  <!-- Hairline -->
+  <line x1="132" y1="73" x2="432" y2="73" stroke="#e2e8f0" stroke-width="0.75"/>
+
+  <!-- Tagline -->
+  <text x="133" y="89"
+        font-family="'Helvetica Neue', Arial, sans-serif"
+        font-size="9" fill="#94a3b8" letter-spacing="4">Spur-ORIENTED PROGRAMMING FOR .NET</text>
+
+</svg>

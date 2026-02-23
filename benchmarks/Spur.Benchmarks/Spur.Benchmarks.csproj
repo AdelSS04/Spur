@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Spur.Benchmarks</RootNamespace>
+    <AssemblyName>Spur.Benchmarks</AssemblyName>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Spur\Spur.csproj" />
+    <ProjectReference Include="..\..\src\Spur.AspNetCore\Spur.AspNetCore.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,42 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,xml,config}]
+indent_size = 2
+
+[*.{md,mdx}]
+trim_trailing_whitespace = false
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.cs]
+# Naming conventions
+dotnet_naming_rule.private_fields_should_start_with_underscore.severity = warning
+dotnet_naming_rule.private_fields_should_start_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_should_start_with_underscore.style = prefix_underscore
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
+# Code style
+csharp_prefer_simple_using_statement = true
+csharp_prefer_braces = true
+csharp_style_namespace_declarations = file_scoped
+csharp_style_expression_bodied_methods = when_on_single_line
+csharp_style_expression_bodied_properties = true
+csharp_style_prefer_primary_constructors = true
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true
+dotnet_style_null_propagation = true
+dotnet_style_coalesce_expression = true
