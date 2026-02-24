@@ -1,8 +1,8 @@
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-using FluentAssertions;
 
 namespace Spur.MediatR.Tests;
 

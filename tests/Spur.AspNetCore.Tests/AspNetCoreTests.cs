@@ -1,8 +1,7 @@
-using Microsoft.AspNetCore.Http;
+using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Spur.AspNetCore.Options;
 using Xunit;
-using FluentAssertions;
 
 namespace Spur.AspNetCore.Tests;
 

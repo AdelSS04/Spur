@@ -1,9 +1,9 @@
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Xunit;
-using FluentAssertions;
 using System.Collections.Immutable;
+using Xunit;
 
 namespace Spur.Analyzers.Tests;
 

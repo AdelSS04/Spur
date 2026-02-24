@@ -1,7 +1,7 @@
+using FluentAssertions;
 using FluentValidation;
 using Spur.Pipeline;
 using Xunit;
-using FluentAssertions;
 
 namespace Spur.FluentValidation.Tests;
 

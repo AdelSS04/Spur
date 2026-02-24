@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Spur.AspNetCore;
 using Spur.EntityFrameworkCore;
-using Spur.SampleApi.Domain;
 using Spur.SampleApi.Infrastructure;
 
 namespace Spur.SampleApi.Features.Users;

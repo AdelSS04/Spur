@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using Spur.Internal;
+using System.Diagnostics;
 
 namespace Spur;
 

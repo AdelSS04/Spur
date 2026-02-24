@@ -1,7 +1,6 @@
-using Xunit;
 using FluentAssertions;
 using Spur.Pipeline;
-using Spur.Tests.Helpers;
+using Xunit;
 
 namespace Spur.Tests.Pipeline;
 

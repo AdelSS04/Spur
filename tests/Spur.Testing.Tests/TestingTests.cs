@@ -1,6 +1,5 @@
-using Xunit;
 using FluentAssertions;
-using Spur.Testing;
+using Xunit;
 
 namespace Spur.Testing.Tests;
 

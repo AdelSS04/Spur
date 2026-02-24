@@ -4,7 +4,6 @@ using Spur.AspNetCore;
 using Spur.EntityFrameworkCore;
 using Spur.FluentValidation;
 using Spur.Pipeline;
-using Spur.SampleApi.Domain;
 using Spur.SampleApi.Infrastructure;
 
 namespace Spur.SampleApi.Features.Users;

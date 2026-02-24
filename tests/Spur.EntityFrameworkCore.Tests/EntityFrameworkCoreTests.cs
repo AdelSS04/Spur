@@ -1,6 +1,6 @@
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using FluentAssertions;
 
 namespace Spur.EntityFrameworkCore.Tests;
 

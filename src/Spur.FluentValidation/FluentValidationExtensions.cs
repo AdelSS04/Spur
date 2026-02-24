@@ -1,6 +1,5 @@
 using FluentValidation;
 using FluentValidation.Results;
-using Spur.Pipeline;
 
 namespace Spur.FluentValidation;
 
