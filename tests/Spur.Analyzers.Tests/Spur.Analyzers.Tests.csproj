@@ -16,5 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Spur.Analyzers\Spur.Analyzers.csproj" />
+    <ProjectReference Include="..\..\src\Spur\Spur.csproj" />
   </ItemGroup>
 </Project>

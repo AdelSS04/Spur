@@ -10,155 +10,121 @@ public class MapExtensionsTests
     [Fact]
     public void Map_OnSuccess_ShouldTransformValue()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var mapped = result.Map(x => x.ToString());
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be("42");
+        var result = Result.Success(42).Map(x => x.ToString());
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("42");
     }
 
     [Fact]
     public void Map_OnFailure_ShouldPropagateError()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-
-        // Act
-        var mapped = result.Map(x => x.ToString());
-
-        // Assert
-        mapped.IsFailure.Should().BeTrue();
-        mapped.Error.Should().Be(TestData.Errors.NotFound);
+        var result = Result.Failure<int>(TestData.Errors.NotFound).Map(x => x.ToString());
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(TestData.Errors.NotFound);
     }
 
     [Fact]
-    public async Task MapAsync_WithAsyncFunc_OnSuccess_ShouldTransformValue()
+    public void Map_NullFunc_ShouldThrowArgumentNullException()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var mapped = await result.MapAsync(async x =>
-        {
-            await Task.Delay(1);
-            return x.ToString();
-        });
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be("42");
+        var result = Result.Success(1);
+        var act = () => result.Map<int, string>(null!);
+        act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public async Task MapAsync_WithAsyncFunc_OnFailure_ShouldPropagateError()
+    public void Map_Chain_ShouldApplyAll()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Validation);
-
-        // Act
-        var mapped = await result.MapAsync(async x =>
-        {
-            await Task.Delay(1);
-            return x.ToString();
-        });
-
-        // Assert
-        mapped.IsFailure.Should().BeTrue();
-        mapped.Error.Should().Be(TestData.Errors.Validation);
-    }
-
-    [Fact]
-    public async Task MapAsync_WithTaskResult_OnSuccess_ShouldTransformValue()
-    {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Success(42));
-
-        // Act
-        var mapped = await resultTask.MapAsync(x => x * 2);
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be(84);
-    }
-
-    [Fact]
-    public async Task MapAsync_WithTaskResult_OnFailure_ShouldPropagateError()
-    {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Failure<int>(TestData.Errors.Conflict));
-
-        // Act
-        var mapped = await resultTask.MapAsync(x => x * 2);
-
-        // Assert
-        mapped.IsFailure.Should().BeTrue();
-        mapped.Error.Should().Be(TestData.Errors.Conflict);
-    }
-
-    [Fact]
-    public async Task MapAsync_WithTaskResultAndAsyncFunc_ShouldWork()
-    {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Success(10));
-
-        // Act
-        var mapped = await resultTask.MapAsync(async x =>
-        {
-            await Task.Delay(1);
-            return x + 5;
-        });
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be(15);
-    }
-
-    [Fact]
-    public void Map_ShouldChainMultipleMaps()
-    {
-        // Arrange
-        var result = Result.Success(5);
-
-        // Act
-        var mapped = result
+        var result = Result.Success(5)
             .Map(x => x * 2)
             .Map(x => x + 10)
             .Map(x => x.ToString());
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be("20");
+        result.Value.Should().Be("20");
     }
 
     [Fact]
     public void Map_WithComplexType_ShouldWork()
     {
-        // Arrange
-        var result = Result.Success(TestData.SampleUser);
-
-        // Act
-        var mapped = result.Map(user => user.Email);
-
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be("test@example.com");
+        var result = Result.Success(TestData.SampleUser).Map(u => u.Email);
+        result.Value.Should().Be("test@example.com");
     }
 
     [Fact]
     public void Map_ToSameType_ShouldWork()
     {
-        // Arrange
-        var result = Result.Success(42);
+        var result = Result.Success(5).Map(x => x * 3);
+        result.Value.Should().Be(15);
+    }
 
-        // Act
-        var mapped = result.Map(x => x + 1);
+    // Async: Result<T> + async transform
+    [Fact]
+    public async Task MapAsync_ResultWithAsyncFunc_OnSuccess()
+    {
+        var mapped = await Result.Success(42).MapAsync(async x =>
+        {
+            await Task.Yield();
+            return x.ToString();
+        });
+        mapped.Value.Should().Be("42");
+    }
 
-        // Assert
-        mapped.IsSuccess.Should().BeTrue();
-        mapped.Value.Should().Be(43);
+    [Fact]
+    public async Task MapAsync_ResultWithAsyncFunc_OnFailure_ShouldPropagateError()
+    {
+        var mapped = await Result.Failure<int>(TestData.Errors.Validation).MapAsync(async x =>
+        {
+            await Task.Yield();
+            return x.ToString();
+        });
+        mapped.IsFailure.Should().BeTrue();
+        mapped.Error.Should().Be(TestData.Errors.Validation);
+    }
+
+    // Async: Task<Result<T>> + sync transform
+    [Fact]
+    public async Task MapAsync_TaskResultWithSyncFunc_OnSuccess()
+    {
+        var mapped = await Task.FromResult(Result.Success(42)).MapAsync(x => x * 2);
+        mapped.Value.Should().Be(84);
+    }
+
+    [Fact]
+    public async Task MapAsync_TaskResultWithSyncFunc_OnFailure()
+    {
+        var mapped = await Task.FromResult(Result.Failure<int>(TestData.Errors.Conflict))
+            .MapAsync(x => x * 2);
+        mapped.IsFailure.Should().BeTrue();
+    }
+
+    // Async: Task<Result<T>> + async transform
+    [Fact]
+    public async Task MapAsync_TaskResultWithAsyncFunc_ShouldWork()
+    {
+        var mapped = await Task.FromResult(Result.Success(10))
+            .MapAsync(async x =>
+            {
+                await Task.Yield();
+                return x + 5;
+            });
+        mapped.Value.Should().Be(15);
+    }
+
+    [Fact]
+    public async Task MapAsync_NullFunc_ShouldThrowArgumentNullException()
+    {
+        Func<int, Task<string>> fn = null!;
+        var act = async () => await Result.Success(1).MapAsync(fn);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    [Fact]
+    public void Map_FailureChain_ShouldPropagateOriginalError()
+    {
+        var error = Error.Unauthorized("no auth");
+        var result = Result.Failure<int>(error)
+            .Map(x => x * 2)
+            .Map(x => x.ToString())
+            .Map(s => s.Length);
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(error);
     }
 }

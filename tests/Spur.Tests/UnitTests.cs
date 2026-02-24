@@ -6,71 +6,50 @@ namespace Spur.Tests;
 public class UnitTests
 {
     [Fact]
-    public void Unit_ShouldHaveSingletonValue()
+    public void Value_ShouldBeSingleton()
     {
-        // Act
-        var unit1 = Unit.Value;
-        var unit2 = Unit.Value;
-
-        // Assert
-        unit1.Should().Be(unit2);
+        Unit.Value.Should().Be(Unit.Value);
     }
 
     [Fact]
-    public void Unit_Equals_ShouldReturnTrue()
+    public void Equals_SameValues_ShouldBeTrue()
     {
-        // Arrange
-        var unit1 = Unit.Value;
-        var unit2 = Unit.Value;
-
-        // Act & Assert
-        unit1.Equals(unit2).Should().BeTrue();
-        (unit1 == unit2).Should().BeTrue();
-        (unit1 != unit2).Should().BeFalse();
+        var a = Unit.Value;
+        var b = Unit.Value;
+        a.Equals(b).Should().BeTrue();
+        (a == b).Should().BeTrue();
+        (a != b).Should().BeFalse();
     }
 
     [Fact]
-    public void Unit_GetHashCode_ShouldBeConsistent()
+    public void Equals_BoxedObject_ShouldBeTrue()
     {
-        // Arrange
-        var unit1 = Unit.Value;
-        var unit2 = Unit.Value;
-
-        // Act & Assert
-        unit1.GetHashCode().Should().Be(unit2.GetHashCode());
+        object boxed = Unit.Value;
+        Unit.Value.Equals(boxed).Should().BeTrue();
     }
 
     [Fact]
-    public void Unit_CompareTo_ShouldReturnZero()
+    public void GetHashCode_ShouldBeConsistent()
     {
-        // Arrange
-        var unit1 = Unit.Value;
-        var unit2 = Unit.Value;
-
-        // Act & Assert
-        unit1.CompareTo(unit2).Should().Be(0);
+        Unit.Value.GetHashCode().Should().Be(Unit.Value.GetHashCode());
     }
 
     [Fact]
-    public void Unit_ToString_ShouldReturnUnit()
+    public void CompareTo_ShouldReturnZero()
     {
-        // Arrange
-        var unit = Unit.Value;
+        Unit.Value.CompareTo(Unit.Value).Should().Be(0);
+    }
 
-        // Act
-        var str = unit.ToString();
-
-        // Assert
-        str.Should().Be("()");
+    [Fact]
+    public void ToString_ShouldReturnParens()
+    {
+        Unit.Value.ToString().Should().Be("()");
     }
 
     [Fact]
     public void Result_Success_Unit_ShouldWork()
     {
-        // Act
         var result = Result.Success();
-
-        // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(Unit.Value);
     }
@@ -78,14 +57,23 @@ public class UnitTests
     [Fact]
     public void Result_Failure_Unit_ShouldWork()
     {
-        // Arrange
         var error = Error.NotFound("Not found");
-
-        // Act
         var result = Result.Failure<Unit>(error);
-
-        // Assert
         result.IsFailure.Should().BeTrue();
         result.Error.Should().Be(error);
+    }
+
+    [Fact]
+    public void Unit_ShouldBeEquatable()
+    {
+        IEquatable<Unit> equatable = Unit.Value;
+        equatable.Equals(Unit.Value).Should().BeTrue();
+    }
+
+    [Fact]
+    public void Unit_ShouldBeComparable()
+    {
+        IComparable<Unit> comparable = Unit.Value;
+        comparable.CompareTo(Unit.Value).Should().Be(0);
     }
 }

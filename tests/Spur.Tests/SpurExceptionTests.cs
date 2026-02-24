@@ -6,83 +6,64 @@ namespace Spur.Tests;
 public class SpurExceptionTests
 {
     [Fact]
-    public void Constructor_ShouldSetError()
+    public void Constructor_WithError_ShouldSetProperties()
     {
-        // Arrange
         var error = Error.NotFound("Not found");
-
-        // Act
-        var exception = new SpurException(error);
-
-        // Assert
-        exception.Error.Should().Be(error);
-        exception.Message.Should().Contain("Not found");
+        var ex = new SpurException(error);
+        ex.Error.Should().Be(error);
+        ex.Message.Should().Contain("Not found");
     }
 
     [Fact]
-    public void Constructor_WithError_ShouldSetMessageFromError()
+    public void Constructor_ShouldIncludeCodeInMessage()
     {
-        // Arrange
-        var error = Error.Validation("Validation error", "VAL_ERROR");
-
-        // Act
-        var exception = new SpurException(error);
-
-        // Assert
-        exception.Error.Should().Be(error);
-        exception.Message.Should().Contain("VAL_ERROR");
-        exception.Message.Should().Contain("Validation error");
+        var error = Error.Validation("Bad", "VAL_CODE");
+        var ex = new SpurException(error);
+        ex.Message.Should().Contain("VAL_CODE");
+        ex.Message.Should().Contain("Bad");
     }
 
     [Fact]
-    public void Constructor_WithInnerException_ShouldSetInnerException()
+    public void Constructor_WithInnerException_ShouldSetInner()
     {
-        // Arrange
-        var error = Error.Unexpected("Unexpected error");
-        var innerException = new InvalidOperationException("Inner exception");
-
-        // Act
-        var exception = new SpurException(error, innerException);
-
-        // Assert
-        exception.Error.Should().Be(error);
-        exception.InnerException.Should().Be(innerException);
+        var error = Error.Unexpected("Unexpected");
+        var inner = new InvalidOperationException("inner-detail");
+        var ex = new SpurException(error, inner);
+        ex.Error.Should().Be(error);
+        ex.InnerException.Should().Be(inner);
     }
 
     [Fact]
-    public void Throw_ShouldCreateException()
+    public void Throw_ShouldBeCatchable()
     {
-        // Arrange
         var error = Error.Conflict("Conflict");
-
-        // Act & Assert
-        Action action = () => throw new SpurException(error);
-        action.Should().Throw<SpurException>()
+        Action act = () => throw new SpurException(error);
+        act.Should().Throw<SpurException>()
             .Which.Error.Code.Should().Be("CONFLICT");
     }
 
     [Fact]
-    public void SpurException_ShouldBeSerializable()
+    public void ShouldBeAssignableToException()
     {
-        // Arrange
-        var error = Error.NotFound("Resource not found", "RESOURCE_NOT_FOUND");
-        var exception = new SpurException(error);
-
-        // Assert - just verify it's an Exception (serialization tests would need BinaryFormatter which is obsolete)
-        exception.Should().BeAssignableTo<Exception>();
+        var ex = new SpurException(Error.NotFound("x"));
+        ex.Should().BeAssignableTo<Exception>();
     }
 
     [Fact]
-    public void Message_ShouldIncludeErrorCodeAndMessage()
+    public void AllErrorCategories_ShouldWorkWithException()
     {
-        // Arrange
-        var error = Error.Validation("Email is invalid", "INVALID_EMAIL");
+        var errors = new[]
+        {
+            Error.Validation("v"), Error.NotFound("n"),
+            Error.Unauthorized("u"), Error.Forbidden("f"),
+            Error.Conflict("c"), Error.TooManyRequests("t"),
+            Error.Unexpected("x")
+        };
 
-        // Act
-        var exception = new SpurException(error);
-
-        // Assert
-        exception.Message.Should().Contain("INVALID_EMAIL");
-        exception.Message.Should().Contain("Email is invalid");
+        foreach (var error in errors)
+        {
+            var ex = new SpurException(error);
+            ex.Error.Category.Should().NotBe(ErrorCategory.Custom);
+        }
     }
 }

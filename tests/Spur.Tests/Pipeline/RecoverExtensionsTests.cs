@@ -7,188 +7,228 @@ namespace Spur.Tests.Pipeline;
 
 public class RecoverExtensionsTests
 {
+    // ── Recover (full) ───────────────────────────────────────────────────────
+
     [Fact]
-    public void Recover_OnSuccess_ShouldReturnOriginal()
+    public void Recover_OnFailure_ShouldExecuteRecovery()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var recovered = result.Recover(error => 99);
-
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(42);
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .Recover(_ => Result.Success(42));
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(42);
     }
 
     [Fact]
-    public void Recover_OnFailure_ShouldRecoverWithFallback()
+    public void Recover_OnSuccess_ShouldNotExecuteRecovery()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-
-        // Act
-        var recovered = result.Recover(error => 99);
-
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(99);
-    }
-
-    [Fact]
-    public void Recover_OnFailure_ErrorParameterShouldBeCorrect()
-    {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Validation);
-        Error? capturedError = null;
-
-        // Act
-        var recovered = result.Recover(error =>
+        bool executed = false;
+        var result = Result.Success(42).Recover(_ =>
         {
-            capturedError = error;
-            return 100;
+            executed = true;
+            return Result.Success(0);
         });
-
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        capturedError.Should().Be(TestData.Errors.Validation);
+        executed.Should().BeFalse();
+        result.Value.Should().Be(42);
     }
 
     [Fact]
-    public void RecoverIf_WithMatchingCategory_ShouldRecover()
+    public void Recover_WithValueFunc_OnFailure_ShouldWrapInSuccess()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-
-        // Act
-        var recovered = result.RecoverIf(ErrorCategory.NotFound, error => 50);
-
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(50);
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .Recover(e => e.HttpStatus);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(404);
     }
 
     [Fact]
-    public void RecoverIf_WithNonMatchingCategory_ShouldPropagateError()
+    public void Recover_ShouldReceiveOriginalError()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
+        Error? captured = null;
+        Result.Failure<int>(Error.Conflict("conflict"))
+            .Recover(e =>
+            {
+                captured = e;
+                return Result.Success(0);
+            });
+        captured.Should().NotBeNull();
+        captured!.Value.Code.Should().Be("CONFLICT");
+    }
 
-        // Act
-        var recovered = result.RecoverIf(ErrorCategory.Validation, error => 50);
+    [Fact]
+    public void Recover_NullFunc_ShouldThrow()
+    {
+        var act = () => Result.Failure<int>(Error.NotFound("nf"))
+            .Recover((Func<Error, Result<int>>)null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
 
-        // Assert
-        recovered.IsFailure.Should().BeTrue();
-        recovered.Error.Should().Be(TestData.Errors.NotFound);
+    // ── RecoverIf (category match) ──────────────────────────────────────────
+
+    [Fact]
+    public void RecoverIf_MatchingCategory_ShouldRecover()
+    {
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .RecoverIf(ErrorCategory.NotFound, _ => Result.Success(0));
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(0);
+    }
+
+    [Fact]
+    public void RecoverIf_NonMatchingCategory_ShouldNotRecover()
+    {
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .RecoverIf(ErrorCategory.Validation, _ => Result.Success(0));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("NOT_FOUND");
     }
 
     [Fact]
     public void RecoverIf_OnSuccess_ShouldReturnOriginal()
     {
-        // Arrange
-        var result = Result.Success(42);
+        var result = Result.Success(42)
+            .RecoverIf(ErrorCategory.NotFound, _ => Result.Success(0));
+        result.Value.Should().Be(42);
+    }
 
-        // Act
-        var recovered = result.RecoverIf(ErrorCategory.NotFound, error => 99);
+    // ── RecoverIfCode ────────────────────────────────────────────────────────
 
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(42);
+    [Fact]
+    public void RecoverIfCode_MatchingCode_ShouldRecover()
+    {
+        var result = Result.Failure<int>(Error.NotFound("nf", "ITEM_NOT_FOUND"))
+            .RecoverIfCode("ITEM_NOT_FOUND", _ => Result.Success(0));
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public void RecoverIfCode_WithMatchingCode_ShouldRecover()
+    public void RecoverIfCode_NonMatchingCode_ShouldNotRecover()
     {
-        // Arrange
-        var result = Result.Failure<int>(Error.NotFound("Not found", "RESOURCE_NOT_FOUND"));
-
-        // Act
-        var recovered = result.RecoverIfCode("RESOURCE_NOT_FOUND", error => 75);
-
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(75);
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .RecoverIfCode("OTHER_CODE", _ => Result.Success(0));
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
-    public void RecoverIfCode_WithNonMatchingCode_ShouldPropagateError()
+    public void RecoverIfCode_OnSuccess_ShouldReturnOriginal()
     {
-        // Arrange
-        var result = Result.Failure<int>(Error.NotFound("Not found", "RESOURCE_NOT_FOUND"));
+        var result = Result.Success(42)
+            .RecoverIfCode("NOT_FOUND", _ => Result.Success(0));
+        result.Value.Should().Be(42);
+    }
 
-        // Act
-        var recovered = result.RecoverIfCode("DIFFERENT_CODE", error => 75);
+    // ── RecoverAsync: Task<Result<T>> ────────────────────────────────────────
 
-        // Assert
-        recovered.IsFailure.Should().BeTrue();
-        recovered.Error.Code.Should().Be("RESOURCE_NOT_FOUND");
+    [Fact]
+    public async Task RecoverAsync_TaskResult_OnFailure_ShouldRecover()
+    {
+        var result = await Task.FromResult(Result.Failure<int>(Error.NotFound("nf")))
+            .RecoverAsync(async e =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public async Task RecoverAsync_OnFailure_ShouldRecoverWithAsyncFallback()
+    public async Task RecoverAsync_TaskResult_OnSuccess_ShouldReturnOriginal()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Conflict);
+        var result = await Task.FromResult(Result.Success(42))
+            .RecoverAsync(async _ =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
+        result.Value.Should().Be(42);
+    }
 
-        // Act
-        var recovered = await result.RecoverAsync(async error =>
-        {
-            await Task.Delay(1);
-            return 200;
-        });
+    // ── RecoverIfAsync: Task<Result<T>> ──────────────────────────────────────
 
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(200);
+    [Fact]
+    public async Task RecoverIfAsync_Matching_ShouldRecover()
+    {
+        var result = await Task.FromResult(Result.Failure<int>(Error.NotFound("nf")))
+            .RecoverIfAsync(ErrorCategory.NotFound, async e =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public async Task RecoverAsync_WithTaskResult_ShouldWork()
+    public async Task RecoverIfAsync_NonMatching_ShouldNotRecover()
     {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Failure<int>(TestData.Errors.Unauthorized));
+        var result = await Task.FromResult(Result.Failure<int>(Error.NotFound("nf")))
+            .RecoverIfAsync(ErrorCategory.Conflict, async _ =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
+        result.IsFailure.Should().BeTrue();
+    }
 
-        // Act
-        var recovered = await resultTask.RecoverAsync(async error =>
-        {
-            await Task.Delay(1);
-            return 150;
-        });
+    // ── RecoverAsync: Result<T> (sync) ───────────────────────────────────────
 
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(150);
+    [Fact]
+    public async Task RecoverAsync_SyncResult_OnFailure_ShouldRecover()
+    {
+        var result = await Result.Failure<int>(Error.Validation("v"))
+            .RecoverAsync(async e =>
+            {
+                await Task.Yield();
+                return Result.Success(-1);
+            });
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(-1);
     }
 
     [Fact]
-    public void Recover_ChainedRecovery_ShouldUseFirstMatch()
+    public async Task RecoverAsync_SyncResult_OnSuccess_ShouldReturnOriginal()
     {
-        // Arrange
-        var result = Result.Failure<int>(Error.NotFound("Not found", "USER_NOT_FOUND"));
+        var result = await Result.Success(99)
+            .RecoverAsync(async _ =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
+        result.Value.Should().Be(99);
+    }
 
-        // Act
-        var recovered = result
-            .RecoverIfCode("OTHER_ERROR", error => 1)
-            .RecoverIf(ErrorCategory.NotFound, error => 2)
-            .Recover(error => 3);
+    // ── Complex Scenarios ────────────────────────────────────────────────────
 
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(2);
+    [Fact]
+    public void Recover_ChainedRecoveryAttempts()
+    {
+        var result = Result.Failure<string>(Error.NotFound("nf"))
+            .RecoverIf(ErrorCategory.Validation, _ => Result.Success("from-validation"))
+            .RecoverIf(ErrorCategory.NotFound, _ => Result.Success("from-notfound"));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("from-notfound");
     }
 
     [Fact]
-    public void Recover_ComplexScenario_ShouldHandleGracefully()
+    public void Recover_RecoveryThatAlsoFails_ShouldReturnNewFailure()
     {
-        // Arrange
-        var result = Result.Success(10)
-            .Validate(x => x > 100, Error.Validation("Too small", "VALUE_TOO_SMALL"));
+        var result = Result.Failure<int>(Error.NotFound("nf"))
+            .Recover(_ => Result.Failure<int>(Error.Conflict("still broken")));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("CONFLICT");
+    }
 
-        // Act
-        var recovered = result.RecoverIfCode("VALUE_TOO_SMALL", error => 100);
+    [Fact]
+    public async Task ComplexPipeline_RecoverInAsyncChain()
+    {
+        var result = await Task.FromResult(Result.Failure<int>(Error.NotFound("nf")))
+            .RecoverAsync(async _ =>
+            {
+                await Task.Yield();
+                return Result.Success(0);
+            });
 
-        // Assert
-        recovered.IsSuccess.Should().BeTrue();
-        recovered.Value.Should().Be(100);
+        var final = result.Map(x => x + 100);
+        final.IsSuccess.Should().BeTrue();
+        final.Value.Should().Be(100);
     }
 }

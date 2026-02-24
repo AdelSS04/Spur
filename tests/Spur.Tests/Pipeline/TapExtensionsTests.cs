@@ -7,233 +7,199 @@ namespace Spur.Tests.Pipeline;
 
 public class TapExtensionsTests
 {
+    // ── Tap (success side-effect) ────────────────────────────────────────────
+
     [Fact]
-    public void Tap_OnSuccess_ShouldExecuteActionAndReturnOriginal()
+    public void Tap_OnSuccess_ShouldExecuteAction()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var sideEffectExecuted = false;
-
-        // Act
-        var tapped = result.Tap(x =>
-        {
-            sideEffectExecuted = true;
-            x.Should().Be(42);
-        });
-
-        // Assert
-        tapped.IsSuccess.Should().BeTrue();
-        tapped.Value.Should().Be(42);
-        sideEffectExecuted.Should().BeTrue();
+        int captured = 0;
+        var result = Result.Success(42).Tap(v => captured = v);
+        captured.Should().Be(42);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(42);
     }
 
     [Fact]
     public void Tap_OnFailure_ShouldNotExecuteAction()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-        var sideEffectExecuted = false;
+        bool executed = false;
+        var result = Result.Failure<int>(TestData.Errors.NotFound).Tap(_ => executed = true);
+        executed.Should().BeFalse();
+        result.IsFailure.Should().BeTrue();
+    }
 
-        // Act
-        var tapped = result.Tap(x =>
-        {
-            sideEffectExecuted = true;
-        });
+    [Fact]
+    public void Tap_ShouldReturnSameResult()
+    {
+        var original = Result.Success(42);
+        var tapped = original.Tap(_ => { });
+        tapped.Value.Should().Be(original.Value);
+    }
 
-        // Assert
-        tapped.IsFailure.Should().BeTrue();
-        tapped.Error.Should().Be(TestData.Errors.NotFound);
-        sideEffectExecuted.Should().BeFalse();
+    [Fact]
+    public void Tap_NullAction_ShouldThrow()
+    {
+        var act = () => Result.Success(1).Tap(null!);
+        act.Should().Throw<ArgumentNullException>();
+    }
+
+    // ── TapError (failure side-effect) ───────────────────────────────────────
+
+    [Fact]
+    public void TapError_OnFailure_ShouldExecuteAction()
+    {
+        string? code = null;
+        var result = Result.Failure<int>(Error.Conflict("c")).TapError(e => code = e.Code);
+        code.Should().Be("CONFLICT");
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
     public void TapError_OnSuccess_ShouldNotExecuteAction()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var sideEffectExecuted = false;
+        bool executed = false;
+        var result = Result.Success(42).TapError(_ => executed = true);
+        executed.Should().BeFalse();
+        result.IsSuccess.Should().BeTrue();
+    }
 
-        // Act
-        var tapped = result.TapError(error =>
-        {
-            sideEffectExecuted = true;
-        });
+    // ── TapBoth ──────────────────────────────────────────────────────────────
 
-        // Assert
-        tapped.IsSuccess.Should().BeTrue();
-        tapped.Value.Should().Be(42);
-        sideEffectExecuted.Should().BeFalse();
+    [Fact]
+    public void TapBoth_OnSuccess_ShouldCallSuccessAction()
+    {
+        int captured = 0;
+        string? errorCode = null;
+        Result.Success(10).TapBoth(v => captured = v, e => errorCode = e.Code);
+        captured.Should().Be(10);
+        errorCode.Should().BeNull();
     }
 
     [Fact]
-    public void TapError_OnFailure_ShouldExecuteActionAndReturnOriginal()
+    public void TapBoth_OnFailure_ShouldCallErrorAction()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Validation);
-        var sideEffectExecuted = false;
+        int captured = 0;
+        string? errorCode = null;
+        Result.Failure<int>(Error.Validation("v")).TapBoth(v => captured = v, e => errorCode = e.Code);
+        captured.Should().Be(0);
+        errorCode.Should().Be("VALIDATION_ERROR");
+    }
 
-        // Act
-        var tapped = result.TapError(error =>
-        {
-            sideEffectExecuted = true;
-            error.Should().Be(TestData.Errors.Validation);
-        });
+    // ── TapAsync: Task<Result<T>> + sync action ─────────────────────────────
 
-        // Assert
-        tapped.IsFailure.Should().BeTrue();
-        tapped.Error.Should().Be(TestData.Errors.Validation);
-        sideEffectExecuted.Should().BeTrue();
+    [Fact]
+    public async Task TapAsync_TaskResult_SyncAction_OnSuccess()
+    {
+        int captured = 0;
+        var result = await Task.FromResult(Result.Success(42)).TapAsync(v => captured = v);
+        captured.Should().Be(42);
+        result.Value.Should().Be(42);
     }
 
     [Fact]
-    public void TapBoth_OnSuccess_ShouldExecuteSuccessAction()
+    public async Task TapAsync_TaskResult_SyncAction_OnFailure_ShouldNotExecute()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var successExecuted = false;
-        var failureExecuted = false;
+        bool executed = false;
+        var result = await Task.FromResult(Result.Failure<int>(TestData.Errors.Conflict))
+            .TapAsync(_ => executed = true);
+        executed.Should().BeFalse();
+    }
 
-        // Act
-        var tapped = result.TapBoth(
-            onSuccess: x =>
-            {
-                successExecuted = true;
-                x.Should().Be(42);
-            },
-            onError: error =>
-            {
-                failureExecuted = true;
-            });
+    // ── TapAsync: Task<Result<T>> + async action ────────────────────────────
 
-        // Assert
-        tapped.IsSuccess.Should().BeTrue();
-        tapped.Value.Should().Be(42);
-        successExecuted.Should().BeTrue();
-        failureExecuted.Should().BeFalse();
+    [Fact]
+    public async Task TapAsync_TaskResult_AsyncAction_OnSuccess()
+    {
+        int captured = 0;
+        var result = await Task.FromResult(Result.Success(42))
+            .TapAsync(async v => { await Task.Yield(); captured = v; });
+        captured.Should().Be(42);
+    }
+
+    // ── TapErrorAsync: Task<Result<T>> + sync action ────────────────────────
+
+    [Fact]
+    public async Task TapErrorAsync_TaskResult_SyncAction_OnFailure()
+    {
+        string? code = null;
+        var result = await Task.FromResult(Result.Failure<int>(Error.NotFound("nf")))
+            .TapErrorAsync(e => code = e.Code);
+        code.Should().Be("NOT_FOUND");
     }
 
     [Fact]
-    public void TapBoth_OnFailure_ShouldExecuteFailureAction()
+    public async Task TapErrorAsync_TaskResult_SyncAction_OnSuccess_ShouldNotExecute()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Conflict);
-        var successExecuted = false;
-        var failureExecuted = false;
+        bool executed = false;
+        var result = await Task.FromResult(Result.Success(42))
+            .TapErrorAsync(_ => executed = true);
+        executed.Should().BeFalse();
+    }
 
-        // Act
-        var tapped = result.TapBoth(
-            onSuccess: x =>
-            {
-                successExecuted = true;
-            },
-            onError: error =>
-            {
-                failureExecuted = true;
-                error.Should().Be(TestData.Errors.Conflict);
-            });
+    // ── TapErrorAsync: Task<Result<T>> + async action ───────────────────────
 
-        // Assert
-        tapped.IsFailure.Should().BeTrue();
-        tapped.Error.Should().Be(TestData.Errors.Conflict);
-        successExecuted.Should().BeFalse();
-        failureExecuted.Should().BeTrue();
+    [Fact]
+    public async Task TapErrorAsync_TaskResult_AsyncAction_OnFailure()
+    {
+        string? code = null;
+        var result = await Task.FromResult(Result.Failure<int>(Error.Forbidden("f")))
+            .TapErrorAsync(async e => { await Task.Yield(); code = e.Code; });
+        code.Should().Be("FORBIDDEN");
+    }
+
+    // ── TapAsync: Result<T> (sync) + async action ───────────────────────────
+
+    [Fact]
+    public async Task TapAsync_Result_AsyncAction_OnSuccess()
+    {
+        int captured = 0;
+        var result = await Result.Success(55)
+            .TapAsync(async v => { await Task.Yield(); captured = v; });
+        captured.Should().Be(55);
     }
 
     [Fact]
-    public async Task TapAsync_OnSuccess_ShouldExecuteAsyncAction()
+    public async Task TapAsync_Result_AsyncAction_OnFailure_ShouldNotExecute()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var sideEffectExecuted = false;
+        bool executed = false;
+        var result = await Result.Failure<int>(Error.Unauthorized("u"))
+            .TapAsync(async _ => { await Task.Yield(); executed = true; });
+        executed.Should().BeFalse();
+    }
 
-        // Act
-        var tapped = await result.TapAsync(async x =>
-        {
-            await Task.Delay(1);
-            sideEffectExecuted = true;
-            x.Should().Be(42);
-        });
+    // ── TapErrorAsync: Result<T> (sync) + async action ──────────────────────
 
-        // Assert
-        tapped.IsSuccess.Should().BeTrue();
-        tapped.Value.Should().Be(42);
-        sideEffectExecuted.Should().BeTrue();
+    [Fact]
+    public async Task TapErrorAsync_Result_AsyncAction_OnFailure()
+    {
+        string? code = null;
+        var result = await Result.Failure<int>(Error.TooManyRequests("tmr"))
+            .TapErrorAsync(async e => { await Task.Yield(); code = e.Code; });
+        code.Should().Be("TOO_MANY_REQUESTS");
     }
 
     [Fact]
-    public async Task TapAsync_WithTaskResult_ShouldWork()
+    public async Task TapErrorAsync_Result_AsyncAction_OnSuccess_ShouldNotExecute()
     {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Success(10));
-        var sideEffectExecuted = false;
-
-        // Act
-        var tapped = await resultTask.TapAsync(x =>
-        {
-            sideEffectExecuted = true;
-            x.Should().Be(10);
-        });
-
-        // Assert
-        tapped.IsSuccess.Should().BeTrue();
-        tapped.Value.Should().Be(10);
-        sideEffectExecuted.Should().BeTrue();
+        bool executed = false;
+        var result = await Result.Success(1)
+            .TapErrorAsync(async _ => { await Task.Yield(); executed = true; });
+        executed.Should().BeFalse();
     }
 
-    [Fact]
-    public async Task TapErrorAsync_OnFailure_ShouldExecuteAsyncAction()
-    {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Unauthorized);
-        var sideEffectExecuted = false;
-
-        // Act
-        var tapped = await result.TapErrorAsync(async error =>
-        {
-            await Task.Delay(1);
-            sideEffectExecuted = true;
-            error.Should().Be(TestData.Errors.Unauthorized);
-        });
-
-        // Assert
-        tapped.IsFailure.Should().BeTrue();
-        tapped.Error.Should().Be(TestData.Errors.Unauthorized);
-        sideEffectExecuted.Should().BeTrue();
-    }
+    // ── Complex chaining ─────────────────────────────────────────────────────
 
     [Fact]
-    public void Tap_ForLogging_ShouldNotAffectPipeline()
+    public void Tap_ChainedWithMap_ShouldLogIntermediateValues()
     {
-        // Arrange
-        var result = Result.Success(TestData.SampleUser);
-        var loggedValue = string.Empty;
+        var log = new List<string>();
+        var result = Result.Success(5)
+            .Tap(v => log.Add($"start:{v}"))
+            .Map(x => x * 2)
+            .Tap(v => log.Add($"mapped:{v}"))
+            .Map(x => x.ToString());
 
-        // Act
-        var final = result
-            .Tap(user => loggedValue = $"Processing user: {user.Name}")
-            .Map(user => user.Email);
-
-        // Assert
-        final.IsSuccess.Should().BeTrue();
-        final.Value.Should().Be("test@example.com");
-        loggedValue.Should().Contain("Test User");
-    }
-
-    [Fact]
-    public void TapError_ForErrorLogging_ShouldNotAffectPipeline()
-    {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Unexpected);
-        var loggedError = string.Empty;
-
-        // Act
-        var final = result
-            .TapError(error => loggedError = $"Error: {error.Code}")
-            .Map(x => x * 2);
-
-        // Assert
-        final.IsFailure.Should().BeTrue();
-        final.Error.Should().Be(TestData.Errors.Unexpected);
-        loggedError.Should().Contain("TEST_UNEXPECTED");
+        result.Value.Should().Be("10");
+        log.Should().BeEquivalentTo(new[] { "start:5", "mapped:10" });
     }
 }

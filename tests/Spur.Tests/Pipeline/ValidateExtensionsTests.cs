@@ -7,195 +7,176 @@ namespace Spur.Tests.Pipeline;
 
 public class ValidateExtensionsTests
 {
+    private static readonly Error ValidationError = Error.Validation("Invalid", "INVALID");
+
+    // ── Sync with static error ───────────────────────────────────────────────
+
     [Fact]
-    public void Validate_WithPredicateTrue_ShouldReturnSuccess()
+    public void Validate_PredicateTrue_ShouldReturnSuccess()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var validated = result.Validate(x => x > 0, Error.Validation("Must be positive"));
-
-        // Assert
-        validated.IsSuccess.Should().BeTrue();
-        validated.Value.Should().Be(42);
+        var result = Result.Success(10).Validate(x => x > 0, ValidationError);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(10);
     }
 
     [Fact]
-    public void Validate_WithPredicateFalse_ShouldReturnFailure()
+    public void Validate_PredicateFalse_ShouldReturnError()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var error = Error.Validation("Must be less than 10");
-
-        // Act
-        var validated = result.Validate(x => x < 10, error);
-
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Should().Be(error);
+        var result = Result.Success(-5).Validate(x => x > 0, ValidationError);
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("INVALID");
     }
 
     [Fact]
-    public void Validate_OnFailure_ShouldPropagateError()
+    public void Validate_OnFailure_ShouldPropagateOriginalError()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-
-        // Act
-        var validated = result.Validate(x => x > 0, Error.Validation("Should not run"));
-
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Should().Be(TestData.Errors.NotFound);
+        var original = Error.NotFound("nf");
+        var result = Result.Failure<int>(original).Validate(x => x > 0, ValidationError);
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(original);
     }
 
     [Fact]
-    public void Validate_WithErrorFactory_ShouldCallFactoryOnFailure()
+    public void Validate_NullPredicate_ShouldThrow()
     {
-        // Arrange
-        var result = Result.Success(42);
+        var act = () => Result.Success(1).Validate(null!, ValidationError);
+        act.Should().Throw<ArgumentNullException>();
+    }
 
-        // Act
-        var validated = result.Validate(
-            x => x < 10,
-            x => Error.Validation($"Value {x} is too large", "VALUE_TOO_LARGE"));
+    // ── Sync with error factory ──────────────────────────────────────────────
 
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Code.Should().Be("VALUE_TOO_LARGE");
-        validated.Error.Message.Should().Contain("42");
+    [Fact]
+    public void Validate_ErrorFactory_PredicateTrue_ShouldReturnSuccess()
+    {
+        var result = Result.Success(10)
+            .Validate(x => x > 0, x => Error.Validation($"{x} is invalid"));
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public void Validate_WithErrorFactory_OnSuccess_ShouldNotCallFactory()
+    public void Validate_ErrorFactory_PredicateFalse_ShouldUseFactory()
     {
-        // Arrange
-        var result = Result.Success(5);
-        var factoryCalled = false;
+        var result = Result.Success(-5)
+            .Validate(x => x > 0, x => Error.Validation($"{x} must be positive"));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Message.Should().Contain("-5 must be positive");
+    }
 
-        // Act
-        var validated = result.Validate(
-            x => x < 10,
-            x =>
+    // ── Chained validations ──────────────────────────────────────────────────
+
+    [Fact]
+    public void Validate_ChainedAll_ShouldPassWhenAllPass()
+    {
+        var result = Result.Success(50)
+            .Validate(x => x > 0, Error.Validation("must be positive"))
+            .Validate(x => x < 100, Error.Validation("must be < 100"))
+            .Validate(x => x % 2 == 0, Error.Validation("must be even"));
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be(50);
+    }
+
+    [Fact]
+    public void Validate_Chained_FailsOnFirst_ShouldShortCircuit()
+    {
+        bool secondChecked = false;
+        var result = Result.Success(-1)
+            .Validate(x => x > 0, Error.Validation("not positive"))
+            .Validate(x =>
             {
-                factoryCalled = true;
-                return Error.Validation("Should not be called");
-            });
+                secondChecked = true;
+                return x < 100;
+            }, Error.Validation("too big"));
 
-        // Assert
-        validated.IsSuccess.Should().BeTrue();
-        factoryCalled.Should().BeFalse();
+        // Short circuits: second predicate not evaluated because first fails and returns failure
+        // Actually in Spur, Validate on failure propagates, so secondChecked will be false
+        result.IsFailure.Should().BeTrue();
+        result.Error.Message.Should().Contain("not positive");
+        secondChecked.Should().BeFalse();
+    }
+
+    // ── Async: Task<Result<T>> + sync predicate ─────────────────────────────
+
+    [Fact]
+    public async Task ValidateAsync_TaskResultSyncPredicate_Pass()
+    {
+        var result = await Task.FromResult(Result.Success(10))
+            .ValidateAsync(x => x > 0, ValidationError);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ValidateAsync_WithAsyncPredicate_OnSuccess_ShouldWork()
+    public async Task ValidateAsync_TaskResultSyncPredicate_Fail()
     {
-        // Arrange
-        var result = Result.Success(42);
+        var result = await Task.FromResult(Result.Success(-1))
+            .ValidateAsync(x => x > 0, ValidationError);
+        result.IsFailure.Should().BeTrue();
+    }
 
-        // Act
-        var validated = await result.ValidateAsync(
-            async x =>
+    // ── Async: Task<Result<T>> + async predicate ────────────────────────────
+
+    [Fact]
+    public async Task ValidateAsync_TaskResultAsyncPredicate_Pass()
+    {
+        var result = await Task.FromResult(Result.Success(10))
+            .ValidateAsync(async x =>
             {
-                await Task.Delay(1);
+                await Task.Yield();
                 return x > 0;
-            },
-            Error.Validation("Must be positive"));
-
-        // Assert
-        validated.IsSuccess.Should().BeTrue();
-        validated.Value.Should().Be(42);
+            }, ValidationError);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ValidateAsync_WithAsyncPredicate_OnFailure_ShouldReturnError()
+    public async Task ValidateAsync_TaskResultAsyncPredicate_Fail()
     {
-        // Arrange
-        var result = Result.Success(42);
-        var error = Error.Validation("Too large");
-
-        // Act
-        var validated = await result.ValidateAsync(
-            async x =>
+        var result = await Task.FromResult(Result.Success(-1))
+            .ValidateAsync(async x =>
             {
-                await Task.Delay(1);
-                return x < 10;
-            },
-            error);
-
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Should().Be(error);
+                await Task.Yield();
+                return x > 0;
+            }, ValidationError);
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ValidateAsync_WithTaskResult_ShouldWork()
+    public async Task ValidateAsync_TaskResultAsyncPredicateWithFactory_Fail()
     {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Success(15));
+        var result = await Task.FromResult(Result.Success(-1))
+            .ValidateAsync(
+                async x => { await Task.Yield(); return x > 0; },
+                x => Error.Validation($"{x} is negative"));
+        result.IsFailure.Should().BeTrue();
+        result.Error.Message.Should().Contain("-1 is negative");
+    }
 
-        // Act
-        var validated = await resultTask.ValidateAsync(
-            x => x > 10,
-            Error.Validation("Must be greater than 10"));
+    // ── Async: Result<T> + async predicate ──────────────────────────────────
 
-        // Assert
-        validated.IsSuccess.Should().BeTrue();
-        validated.Value.Should().Be(15);
+    [Fact]
+    public async Task ValidateAsync_ResultAsyncPredicate_Pass()
+    {
+        var result = await Result.Success(10).ValidateAsync(
+            async x => { await Task.Yield(); return x > 0; },
+            ValidationError);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public async Task ValidateAsync_WithAsyncPredicate_AndErrorFactory_ShouldWork()
+    public async Task ValidateAsync_ResultAsyncPredicate_Fail()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var validated = await result.ValidateAsync(
-            async x =>
-            {
-                await Task.Delay(1);
-                return x < 10;
-            },
-            x => Error.Validation($"Value {x} is invalid", "INVALID_VALUE"));
-
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Code.Should().Be("INVALID_VALUE");
+        var result = await Result.Success(-1).ValidateAsync(
+            async x => { await Task.Yield(); return x > 0; },
+            ValidationError);
+        result.IsFailure.Should().BeTrue();
     }
 
     [Fact]
-    public void Validate_ChainedValidations_ShouldStopAtFirstFailure()
+    public async Task ValidateAsync_OnFailure_ShouldNotCallPredicate()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var validated = result
-            .Validate(x => x > 0, Error.Validation("Must be positive"))
-            .Validate(x => x < 10, Error.Validation("Must be less than 10", "TOO_LARGE"))
-            .Validate(x => x % 2 == 0, Error.Validation("Must be even"));
-
-        // Assert
-        validated.IsFailure.Should().BeTrue();
-        validated.Error.Code.Should().Be("TOO_LARGE");
-    }
-
-    [Fact]
-    public void Validate_AllPass_ShouldReturnOriginalValue()
-    {
-        // Arrange
-        var result = Result.Success(8);
-
-        // Act
-        var validated = result
-            .Validate(x => x > 0, Error.Validation("Must be positive"))
-            .Validate(x => x < 10, Error.Validation("Must be less than 10"))
-            .Validate(x => x % 2 == 0, Error.Validation("Must be even"));
-
-        // Assert
-        validated.IsSuccess.Should().BeTrue();
-        validated.Value.Should().Be(8);
+        bool called = false;
+        var result = await Result.Failure<int>(Error.NotFound("nf")).ValidateAsync(
+            async x => { called = true; await Task.Yield(); return true; },
+            ValidationError);
+        called.Should().BeFalse();
+        result.IsFailure.Should().BeTrue();
     }
 }

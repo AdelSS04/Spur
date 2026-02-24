@@ -56,6 +56,7 @@ public sealed class ResultPipelineBehavior<TRequest, TResponse> : IPipelineBehav
     }
 
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Result.Failure<T> is a public API method that will be preserved")]
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Result.Failure<T>(Error) is a public API method that will be preserved")]
     private static TResponse CreateErrorResponse(Error error)
     {
         var responseType = typeof(TResponse);
@@ -64,8 +65,12 @@ public sealed class ResultPipelineBehavior<TRequest, TResponse> : IPipelineBehav
         if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
         {
             var valueType = responseType.GetGenericArguments()[0];
-            var failureMethod = typeof(Result).GetMethod(nameof(Result.Failure))
-                ?.MakeGenericMethod(valueType);
+            var failureMethod = typeof(Result).GetMethods()
+                .First(m => m.Name == nameof(Result.Failure)
+                    && m.IsGenericMethod
+                    && m.GetParameters().Length == 1
+                    && m.GetParameters()[0].ParameterType == typeof(Error))
+                .MakeGenericMethod(valueType);
 
             if (failureMethod != null)
             {

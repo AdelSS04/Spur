@@ -7,200 +7,116 @@ namespace Spur.Tests.Pipeline;
 
 public class MatchExtensionsTests
 {
+    // ── Sync ─────────────────────────────────────────────────────────────────
+
     [Fact]
-    public void Match_OnSuccess_ShouldExecuteSuccessFunc()
+    public void Match_OnSuccess_ShouldExecuteOnSuccess()
     {
-        // Arrange
-        var result = Result.Success(42);
-
-        // Act
-        var output = result.Match(
-            onSuccess: value => $"Success: {value}",
-            onFailure: error => $"Failure: {error.Code}");
-
-        // Assert
-        output.Should().Be("Success: 42");
+        var output = Result.Success(42).Match(v => $"OK:{v}", e => $"ERR:{e.Code}");
+        output.Should().Be("OK:42");
     }
 
     [Fact]
-    public void Match_OnFailure_ShouldExecuteFailureFunc()
+    public void Match_OnFailure_ShouldExecuteOnFailure()
     {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.NotFound);
-
-        // Act
-        var output = result.Match(
-            onSuccess: value => $"Success: {value}",
-            onFailure: error => $"Failure: {error.Code}");
-
-        // Assert
-        output.Should().Be("Failure: TEST_NOT_FOUND");
+        var output = Result.Failure<int>(Error.NotFound("nf"))
+            .Match(v => $"OK:{v}", e => $"ERR:{e.Code}");
+        output.Should().Be("ERR:NOT_FOUND");
     }
 
     [Fact]
-    public async Task MatchAsync_OnSuccess_ShouldExecuteSuccessFunc()
+    public void Match_DifferentReturnTypes_ShouldAllWork()
     {
-        // Arrange
-        var result = Result.Success(100);
+        var intResult = Result.Success(42).Match(v => v * 2, _ => -1);
+        intResult.Should().Be(84);
 
-        // Act
-        var output = await result.MatchAsync(
-            onSuccess: async value =>
-            {
-                await Task.Delay(1);
-                return $"Async Success: {value}";
-            },
-            onFailure: async error =>
-            {
-                await Task.Delay(1);
-                return $"Async Failure: {error.Code}";
-            });
-
-        // Assert
-        output.Should().Be("Async Success: 100");
-    }
-
-    [Fact]
-    public async Task MatchAsync_OnFailure_ShouldExecuteFailureFunc()
-    {
-        // Arrange
-        var result = Result.Failure<int>(TestData.Errors.Validation);
-
-        // Act
-        var output = await result.MatchAsync(
-            onSuccess: async value =>
-            {
-                await Task.Delay(1);
-                return $"Async Success: {value}";
-            },
-            onFailure: async error =>
-            {
-                await Task.Delay(1);
-                return $"Async Failure: {error.Code}";
-            });
-
-        // Assert
-        output.Should().Be("Async Failure: TEST_VALIDATION");
-    }
-
-    [Fact]
-    public async Task MatchAsync_WithTaskResult_OnSuccess_ShouldWork()
-    {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Success(25));
-
-        // Act
-        var output = await resultTask.MatchAsync(
-            onSuccess: value => $"Value: {value}",
-            onFailure: error => $"Error: {error.Code}");
-
-        // Assert
-        output.Should().Be("Value: 25");
-    }
-
-    [Fact]
-    public async Task MatchAsync_WithTaskResult_OnFailure_ShouldWork()
-    {
-        // Arrange
-        var resultTask = Task.FromResult(Result.Failure<int>(TestData.Errors.Conflict));
-
-        // Act
-        var output = await resultTask.MatchAsync(
-            onSuccess: value => $"Value: {value}",
-            onFailure: error => $"Error: {error.Code}");
-
-        // Assert
-        output.Should().Be("Error: TEST_CONFLICT");
+        var boolResult = Result.Success(42).Match(_ => true, _ => false);
+        boolResult.Should().BeTrue();
     }
 
     [Fact]
     public void Match_ComplexType_ShouldWork()
     {
-        // Arrange
-        var result = Result.Success(TestData.SampleUser);
+        var user = TestData.SampleUser;
+        var result = Result.Success(user).Match(u => u.Name, e => "unknown");
+        result.Should().Be("Test User");
+    }
 
-        // Act
-        var output = result.Match(
-            onSuccess: user => $"{user.Name} ({user.Email})",
-            onFailure: error => "No user");
+    // ── Async ────────────────────────────────────────────────────────────────
 
-        // Assert
-        output.Should().Be("Test User (test@example.com)");
+    [Fact]
+    public async Task MatchAsync_OnSuccess_ShouldExecuteAsync()
+    {
+        var output = await Result.Success(42).MatchAsync(
+            async v => { await Task.Yield(); return $"OK:{v}"; },
+            async e => { await Task.Yield(); return $"ERR:{e.Code}"; });
+        output.Should().Be("OK:42");
     }
 
     [Fact]
-    public void Match_DifferentReturnTypes_ShouldWork()
+    public async Task MatchAsync_OnFailure_ShouldExecuteAsync()
     {
-        // Arrange
-        var result = Result.Success(42);
+        var output = await Result.Failure<int>(Error.Conflict("c")).MatchAsync(
+            async v => { await Task.Yield(); return "ok"; },
+            async e => { await Task.Yield(); return $"ERR:{e.Code}"; });
+        output.Should().Be("ERR:CONFLICT");
+    }
 
-        // Act
-        var output = result.Match(
-            onSuccess: value => value > 0,
-            onFailure: error => false);
+    // ── Task<Result<T>> overloads ────────────────────────────────────────────
 
-        // Assert
-        output.Should().BeTrue();
+    [Fact]
+    public async Task MatchAsync_TaskResult_SyncHandlers_OnSuccess()
+    {
+        var output = await Task.FromResult(Result.Success(10))
+            .MatchAsync(v => v * 3, _ => -1);
+        output.Should().Be(30);
     }
 
     [Fact]
-    public void Match_InPipeline_ShouldTerminatePipeline()
+    public async Task MatchAsync_TaskResult_SyncHandlers_OnFailure()
     {
-        // Arrange
-        var result = Result.Success(10);
-
-        // Act
-        var output = result
-            .Map(x => x * 2)
-            .Validate(x => x > 15, Error.Validation("Too small"))
-            .Match(
-                onSuccess: value => $"Final: {value}",
-                onFailure: error => $"Error: {error.Message}");
-
-        // Assert
-        output.Should().Be("Final: 20");
+        var output = await Task.FromResult(Result.Failure<int>(Error.Unauthorized("ua")))
+            .MatchAsync(v => v, _ => -1);
+        output.Should().Be(-1);
     }
 
     [Fact]
-    public void Match_WithErrorInPipeline_ShouldHandleGracefully()
+    public async Task MatchAsync_TaskResult_AsyncHandlers_OnSuccess()
     {
-        // Arrange
-        var result = Result.Success(5);
-
-        // Act
-        var output = result
-            .Map(x => x * 2)
-            .Validate(x => x > 15, Error.Validation("Too small"))
-            .Match(
-                onSuccess: value => $"Final: {value}",
-                onFailure: error => $"Error: {error.Message}");
-
-        // Assert
-        output.Should().Be("Error: Too small");
-    }
-
-    [Fact]
-    public async Task MatchAsync_ComplexPipeline_ShouldWork()
-    {
-        // Arrange
-        var result = Result.Success(TestData.SampleUser);
-
-        // Act
-        var output = await result
-            .Map(user => user.Email)
+        var output = await Task.FromResult(Result.Success(10))
             .MatchAsync(
-                onSuccess: async email =>
-                {
-                    await Task.Delay(1);
-                    return $"Email: {email}";
-                },
-                onFailure: async error =>
-                {
-                    await Task.Delay(1);
-                    return "No email";
-                });
+                async v => { await Task.Yield(); return v + 1; },
+                async e => { await Task.Yield(); return -1; });
+        output.Should().Be(11);
+    }
 
-        // Assert
-        output.Should().Be("Email: test@example.com");
+    [Fact]
+    public async Task MatchAsync_TaskResult_AsyncHandlers_OnFailure()
+    {
+        var output = await Task.FromResult(Result.Failure<int>(Error.Forbidden("f")))
+            .MatchAsync(
+                async v => { await Task.Yield(); return v; },
+                async e => { await Task.Yield(); return e.HttpStatus; });
+        output.Should().Be(403);
+    }
+
+    // ── Edge Cases ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Match_InPipeline_ShouldWork()
+    {
+        var output = Result.Success(5)
+            .Map(x => x * 10)
+            .Match(v => $"Result: {v}", e => "Failed");
+        output.Should().Be("Result: 50");
+    }
+
+    [Fact]
+    public void Match_WithFailedPipeline_ShouldReturnFailureBranch()
+    {
+        var output = Result.Failure<int>(Error.Validation("bad"))
+            .Map(x => x * 10)
+            .Match(v => $"Result: {v}", e => $"Failed: {e.Code}");
+        output.Should().Be("Failed: VALIDATION_ERROR");
     }
 }
